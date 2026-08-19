@@ -1,0 +1,30 @@
+name: Validate PyMOL interface analyzer
+
+on:
+  push:
+    branches:
+      - "feature/antibody-antigen-interface-analyzer"
+  pull_request:
+    paths:
+      - "pymol_ab_interface_analyzer.py"
+      - "tests/test_interface_geometry.py"
+      - ".github/workflows/interface-analyzer-ci.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.8", "3.11", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Compile plugin
+        run: python -m py_compile pymol_ab_interface_analyzer.py
+      - name: Run dependency-free geometry tests
+        run: python -m unittest discover -s tests -v
