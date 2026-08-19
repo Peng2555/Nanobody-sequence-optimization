@@ -8,6 +8,9 @@ REPOSITORY_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if REPOSITORY_ROOT not in sys.path:
     sys.path.insert(0, REPOSITORY_ROOT)
 
+import pymol
+
+pymol.finish_launching(["pymol", "-cq"])
 from pymol import cmd
 
 from pymol_ab_interface_analyzer import ab_interface
