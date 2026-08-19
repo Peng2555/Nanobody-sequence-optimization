@@ -1,4 +1,18 @@
-# PyMOL Antibody Surface Hydrophobic Analyzer
+# PyMOL 抗体结构分析工具集
+
+本仓库目前包含两个互补工具：
+
+1. `pymol_antibody_surface_hydrophobic.py`：分析抗体表面 RSA、侧链 SASA 和疏水候选斑块；
+2. `pymol_ab_interface_analyzer.py`：分析抗原–抗体界面残基、BSA 及几何支持的相互作用候选。
+
+抗原–抗体界面分析器的完整中文文档见：
+
+- [PyMOL 抗原–抗体结合界面分析器](docs/ANTIBODY_ANTIGEN_INTERFACE_ANALYZER_CN.md)
+- [1MLC 端到端验证记录](docs/VALIDATION_1MLC.md)
+
+下面首先是表面疏水分析器的使用说明。
+
+## 表面疏水分析器
 
 一个面向抗体、纳米抗体和其他蛋白结构的 PyMOL 脚本，用于：
 
@@ -16,6 +30,9 @@
 
 ```text
 pymol_antibody_surface_hydrophobic.py
+pymol_ab_interface_analyzer.py
+docs/ANTIBODY_ANTIGEN_INTERFACE_ANALYZER_CN.md
+docs/VALIDATION_1MLC.md
 README.md
 ```
 

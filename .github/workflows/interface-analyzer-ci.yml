@@ -1,0 +1,56 @@
+name: Validate PyMOL interface analyzer
+
+on:
+  push:
+    branches:
+      - "feature/antibody-antigen-interface-analyzer"
+  pull_request:
+    paths:
+      - "pymol_ab_interface_analyzer.py"
+      - "tests/test_interface_geometry.py"
+      - "tests/validate_1mlc.py"
+      - ".github/workflows/interface-analyzer-ci.yml"
+
+concurrency:
+  group: interface-analyzer-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.8", "3.11", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Compile plugin
+        run: python -m py_compile pymol_ab_interface_analyzer.py
+      - name: Run dependency-free geometry tests
+        run: python -m unittest discover -s tests -v
+
+  pymol-integration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install open-source PyMOL wheel
+        run: python -m pip install --disable-pip-version-check pymol-open-source
+      - name: Analyze public 1MLC Fab-lysozyme complex
+        run: python tests/validate_1mlc.py
+      - name: Preserve auditable 1MLC reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: validation-1mlc-results
+          path: |
+            validation_1mlc_interactions.csv
+            validation_1mlc_residues.csv
+            validation_1mlc_summary.json
+          if-no-files-found: error
