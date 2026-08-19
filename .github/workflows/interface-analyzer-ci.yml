@@ -11,6 +11,10 @@ on:
       - "tests/validate_1mlc.py"
       - ".github/workflows/interface-analyzer-ci.yml"
 
+concurrency:
+  group: interface-analyzer-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
