@@ -8,6 +8,7 @@
 抗原–抗体界面分析器的完整中文文档见：
 
 - [PyMOL 抗原–抗体结合界面分析器](docs/ANTIBODY_ANTIGEN_INTERFACE_ANALYZER_CN.md)
+- [1MLC 端到端验证记录](docs/VALIDATION_1MLC.md)
 
 下面首先是表面疏水分析器的使用说明。
 
@@ -31,6 +32,7 @@
 pymol_antibody_surface_hydrophobic.py
 pymol_ab_interface_analyzer.py
 docs/ANTIBODY_ANTIGEN_INTERFACE_ANALYZER_CN.md
+docs/VALIDATION_1MLC.md
 README.md
 ```
 
