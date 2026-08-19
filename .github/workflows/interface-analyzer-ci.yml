@@ -37,6 +37,6 @@ jobs:
       - name: Install open-source PyMOL
         run: |
           sudo apt-get update
-          sudo apt-get install -y pymol
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends pymol
       - name: Analyze public 1MLC Fab-lysozyme complex
         run: pymol -cq -r tests/validate_1mlc.py
