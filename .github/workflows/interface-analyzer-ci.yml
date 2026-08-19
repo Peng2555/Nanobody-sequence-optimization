@@ -34,9 +34,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Install open-source PyMOL
-        run: |
-          sudo apt-get update
-          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends pymol
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install open-source PyMOL wheel
+        run: python -m pip install --disable-pip-version-check pymol-open-source
       - name: Analyze public 1MLC Fab-lysozyme complex
-        run: pymol -cq -r tests/validate_1mlc.py
+        run: python tests/validate_1mlc.py
