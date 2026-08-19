@@ -20,6 +20,7 @@ import csv
 import json
 import math
 import os
+import re
 from collections import defaultdict
 
 try:
@@ -291,7 +292,8 @@ def _best_by_residue_pair(atom_pairs):
 
 
 def _add_interaction(store, interaction_type, atom1, atom2, distance,
-                     confidence, criterion, geometry=""):
+                     confidence, criterion, geometry="", atom1_label=None,
+                     atom2_label=None):
     r1 = _residue_id(atom1)
     r2 = _residue_id(atom2)
     key = (interaction_type, r1, r2)
@@ -299,9 +301,9 @@ def _add_interaction(store, interaction_type, atom1, atom2, distance,
         "type": interaction_type,
         "confidence": confidence,
         "partner1_residue": _residue_key_text(r1),
-        "partner1_atom": atom1["name"],
+        "partner1_atom": atom1_label or atom1["name"],
         "partner2_residue": _residue_key_text(r2),
-        "partner2_atom": atom2["name"],
+        "partner2_atom": atom2_label or atom2["name"],
         "distance_A": round(float(distance), 3),
         "geometry": geometry,
         "criterion": criterion,
@@ -316,11 +318,9 @@ def _add_interaction(store, interaction_type, atom1, atom2, distance,
 
 def _ring_records(atoms, side, warnings):
     grouped = defaultdict(dict)
-    representative = {}
     for atom in atoms:
         rid = _residue_id(atom)
         grouped[rid][atom["name"]] = atom
-        representative[rid] = atom
 
     rings = []
     for rid, names in grouped.items():
@@ -390,6 +390,8 @@ def _ring_interactions(rings1, rings2, store, cfg):
                     "centroid<=%.1f A; normal_angle<=%.1f deg; psi<=%.1f deg"
                     % (cfg["pi_stack_cutoff"], cfg["pi_normal_angle"], cfg["pi_psi_angle"]),
                     geometry,
+                    atom1_label="RING_CENTROID",
+                    atom2_label="RING_CENTROID",
                 )
             elif (
                 distance <= cfg["t_stack_cutoff"]
@@ -402,6 +404,8 @@ def _ring_interactions(rings1, rings2, store, cfg):
                     "centroid<=%.1f A; |normal_angle-90|<=%.1f deg; psi<=%.1f deg"
                     % (cfg["t_stack_cutoff"], cfg["t_normal_tolerance"], cfg["pi_psi_angle"]),
                     geometry,
+                    atom1_label="RING_CENTROID",
+                    atom2_label="RING_CENTROID",
                 )
 
 
@@ -422,11 +426,15 @@ def _cation_pi_interactions(cations, rings, cation_is_partner1, store, cfg):
                     _add_interaction(
                         store, "cation_pi", cation["atom"], ring["atom"], distance,
                         "geometry_supported; charge_state_assumed", criterion, geometry,
+                        atom1_label="CATION_CENTER",
+                        atom2_label="RING_CENTROID",
                     )
                 else:
                     _add_interaction(
                         store, "cation_pi", ring["atom"], cation["atom"], distance,
                         "geometry_supported; charge_state_assumed", criterion, geometry,
+                        atom1_label="RING_CENTROID",
+                        atom2_label="CATION_CENTER",
                     )
 
 
@@ -732,7 +740,7 @@ def _make_visuals(prefix, selection1, selection2, rows, interface1, interface2, 
             try:
                 cmd.label(
                     "(%s) and name CA" % side_name,
-                    '"%s%s" % (one_letter[resn], resi)',
+                    '"%s%s" % (one_letter.get(resn, "X"), resi)',
                     space={"one_letter": AA1},
                 )
             except TypeError:
@@ -877,6 +885,11 @@ def ab_interface(
     prefix = str(prefix).strip()
     if not prefix:
         raise ValueError("prefix cannot be empty")
+    if re.match(r"^[A-Za-z_][A-Za-z0-9_]*$", prefix) is None:
+        raise ValueError(
+            "prefix must start with a letter or underscore and contain only "
+            "letters, numbers and underscores"
+        )
     state = _as_int(state, "state")
     if state < 1:
         raise ValueError("state must be >= 1")
@@ -887,6 +900,12 @@ def ab_interface(
     cfg["hbond_cutoff"] = _as_float(hbond_cutoff, "hbond_cutoff")
     cfg["salt_cutoff"] = _as_float(salt_cutoff, "salt_cutoff")
     cfg["hydrophobic_cutoff"] = _as_float(hydrophobic_cutoff, "hydrophobic_cutoff")
+    for parameter in (
+        "contact_cutoff", "bsa_residue_cutoff", "hbond_cutoff",
+        "salt_cutoff", "hydrophobic_cutoff",
+    ):
+        if cfg[parameter] <= 0.0:
+            raise ValueError("%s must be > 0" % parameter)
 
     count1 = cmd.count_atoms("(%s) and not hydro and not solvent" % partner1)
     count2 = cmd.count_atoms("(%s) and not hydro and not solvent" % partner2)
