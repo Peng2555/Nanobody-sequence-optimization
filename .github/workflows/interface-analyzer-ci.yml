@@ -8,13 +8,14 @@ on:
     paths:
       - "pymol_ab_interface_analyzer.py"
       - "tests/test_interface_geometry.py"
+      - "tests/validate_1mlc.py"
       - ".github/workflows/interface-analyzer-ci.yml"
 
 permissions:
   contents: read
 
 jobs:
-  test:
+  unit-tests:
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -28,3 +29,14 @@ jobs:
         run: python -m py_compile pymol_ab_interface_analyzer.py
       - name: Run dependency-free geometry tests
         run: python -m unittest discover -s tests -v
+
+  pymol-integration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install open-source PyMOL
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pymol
+      - name: Analyze public 1MLC Fab-lysozyme complex
+        run: pymol -cq -r tests/validate_1mlc.py
