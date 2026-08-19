@@ -29,6 +29,8 @@
 
 ```text
 pymol_antibody_surface_hydrophobic.py
+pymol_ab_interface_analyzer.py
+docs/ANTIBODY_ANTIGEN_INTERFACE_ANALYZER_CN.md
 README.md
 ```
 
