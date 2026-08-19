@@ -701,6 +701,21 @@ def _make_visuals(prefix, selection1, selection2, rows, interface1, interface2, 
     names["p2_interface"] = prefix + "_p2_interface"
     names["all_interface"] = prefix + "_interface"
 
+    # A repeated run with the same prefix must never retain stale measurements.
+    stale_names = list(names.values()) + [
+        prefix + "_" + interaction_type for interaction_type in COLORS
+    ]
+    for stale_name in stale_names:
+        try:
+            cmd.delete(stale_name)
+        except Exception:
+            pass
+    try:
+        if cmd.get_type(prefix) == "object:group":
+            cmd.delete(prefix)
+    except Exception:
+        pass
+
     cmd.select(names["p1_interface"], _residue_expression(selection1, interface1))
     cmd.select(names["p2_interface"], _residue_expression(selection2, interface2))
     cmd.select(
@@ -893,6 +908,15 @@ def ab_interface(
     state = _as_int(state, "state")
     if state < 1:
         raise ValueError("state must be >= 1")
+    try:
+        existing_prefix_type = cmd.get_type(prefix)
+    except Exception:
+        existing_prefix_type = ""
+    if existing_prefix_type and existing_prefix_type != "object:group":
+        raise ValueError(
+            "prefix %r is already used by a non-group PyMOL name; choose another prefix"
+            % prefix
+        )
 
     cfg = dict(DEFAULTS)
     cfg["contact_cutoff"] = _as_float(contact_cutoff, "contact_cutoff")
