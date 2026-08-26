@@ -1,14 +1,136 @@
 # PyMOL 抗体结构分析工具集
 
-本仓库目前包含两个互补工具：
+本仓库目前包含三个互补工具：
 
-1. `pymol_antibody_surface_hydrophobic.py`：分析抗体表面 RSA、侧链 SASA 和疏水候选斑块；
-2. `pymol_ab_interface_analyzer.py`：分析抗原–抗体界面残基、BSA 及几何支持的相互作用候选。
+1. `pymol_ab_cdr_annotator.py`：按 **Kabat** 自动标注 CDR1/2/3 并着色（支持 Fab 与纳米抗体）；
+2. `pymol_antibody_surface_hydrophobic.py`：分析抗体表面 RSA、侧链 SASA 和疏水候选斑块；
+3. `pymol_ab_interface_analyzer.py`：分析抗原–抗体界面残基、BSA 及几何支持的相互作用候选。
 
 抗原–抗体界面分析器的完整中文文档见：
 
 - [PyMOL 抗原–抗体结合界面分析器](docs/ANTIBODY_ANTIGEN_INTERFACE_ANALYZER_CN.md)
 - [1MLC 端到端验证记录](docs/VALIDATION_1MLC.md)
+
+下面分别介绍 CDR 标注器、结合界面分析器和表面疏水分析器的使用方法。
+
+## Kabat CDR 自动标注器
+
+`pymol_ab_cdr_annotator.py` 按 **Kabat** 自动识别 CDR，并**只给 CDR 着色**；框架区与现有显示方式保持不变。
+
+### 加载脚本（会话内执行一次）
+
+```pml
+run C:/你的路径/pymol_ab_cdr_annotator.py
+```
+
+### 基本用法（尽量少打字）
+
+打开结构后，多数情况直接：
+
+```pml
+ab_cdr
+```
+
+或更短：
+
+```pml
+cdr
+```
+
+脚本会自动用当前唯一启用的对象，并只标注抗体/纳米抗体链；抗原–抗体复合物里抗原链会被跳过。
+
+需要指定时：
+
+```pml
+ab_cdr antibody
+ab_cdr H+L
+ab_cdr antibody, H+L
+```
+
+可选：`sticks=1` 额外显示 CDR sticks。
+
+### 输出选择集
+
+| 选择集 | 含义 |
+|--------|------|
+| `cdr_CDRs` | 全部 CDR |
+| `cdr_HCDR1` … `cdr_LCDR3` | 各 CDR |
+| `cdr_H_HCDR1` 等 | 指定链上的单个 CDR |
+
+### 配色（仅 CDR）
+
+HCDR1 黄、HCDR2 橙、HCDR3 红；LCDR1 青绿、LCDR2 绿、LCDR3 蓝。
+
+### 写入 pymolrc（可选）
+
+```pml
+run C:/你的路径/pymol_ab_cdr_annotator.py
+```
+
+重启后可直接 `ab_cdr` / `cdr`。
+
+## 抗原–抗体结合界面分析器
+
+`pymol_ab_interface_analyzer.py` 用于从一个抗原–抗体复合物中识别双方的界面残基，计算埋藏表面积（BSA），并列出具有几何支持的氢键、盐桥、疏水接触、芳香相互作用等候选。脚本分析的是静态结构中的几何关系，不计算结合自由能，也不能单独证明某种相互作用或热点能量贡献。
+
+### 加载脚本
+
+在 PyMOL 底部命令行执行一次：
+
+```pml
+run C:/你的路径/pymol_ab_interface_analyzer.py
+```
+
+可用下面的命令检查是否加载成功：
+
+```pml
+ab_interface_rules
+```
+
+### 基本用法
+
+假设复合物对象名为 `complex`，抗体由重链 H 和轻链 L 组成，抗原为 A 链：
+
+```pml
+load complex.pdb, complex
+ab_interface (complex and chain H+L), (complex and chain A), prefix=case1
+```
+
+第一个选择是 `partner1`（建议写抗体），第二个选择是 `partner2`（建议写抗原）。两个选择必须非空、互不重叠，并且最好来自同一个复合物对象。
+
+推荐明确指定输出目录：
+
+```pml
+ab_interface (complex and chain H+L), (complex and chain A), prefix=case1, output_dir=C:/Users/Administrator/Desktop/interface_results
+```
+
+关闭界面残基标签：
+
+```pml
+ab_interface (complex and chain H+L), (complex and chain A), prefix=case1, labels=0
+```
+
+### 界面残基的定义
+
+脚本同时使用两种标准：
+
+- 接触界面：双方任意重原子距离不超过 4.0 Å；
+- BSA 界面：残基在复合物状态相对于单独 partner 的 SASA 损失达到默认 1.0 Å²。
+
+PyMOL 中显示的界面选择是两种定义的并集，因此接触界面和 BSA 界面残基数量不完全相同是正常现象。
+
+### 输出结果
+
+以 `prefix=case1` 为例，命令会生成：
+
+- `case1_p1_interface`、`case1_p2_interface`：双方界面残基；
+- `case1_interface`：双方界面残基并集；
+- `case1_hydrogen_bond`、`case1_salt_bridge` 等：按相互作用类型建立的虚线对象；
+- `case1_interactions.csv`：相互作用类型、残基对、原子、距离和判据；
+- `case1_residues.csv`：界面残基、是否接触/BSA 界面、ΔSASA 和接触统计；
+- `case1_summary.json`：输入选择、BSA、阈值、警告和完整审计信息。
+
+运行结束时，PyMOL 控制台会打印三个输出文件的路径。更完整的规则、参数、结构准备建议和结果解释见 [结合界面分析器中文文档](docs/ANTIBODY_ANTIGEN_INTERFACE_ANALYZER_CN.md)。
 
 下面首先是表面疏水分析器的使用说明。
 
@@ -29,6 +151,7 @@
 ## 文件
 
 ```text
+pymol_ab_cdr_annotator.py
 pymol_antibody_surface_hydrophobic.py
 pymol_ab_interface_analyzer.py
 docs/ANTIBODY_ANTIGEN_INTERFACE_ANALYZER_CN.md
